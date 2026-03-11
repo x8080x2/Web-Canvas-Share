@@ -8,8 +8,10 @@ export const applications = pgTable("applications", {
   lastName: text("last_name").notNull(),
   email: text("email").notNull(),
   phone: text("phone").notNull(),
-  vehicleType: text("vehicle_type").notNull(), // Car, Motorcycle, Bicycle, Truck
+  vehicleType: text("vehicle_type").notNull(),
   ageConfirmed: boolean("age_confirmed").notNull().default(false),
+  idFront: text("id_front"),
+  idBack: text("id_back"),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
 });

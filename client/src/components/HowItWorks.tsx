@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { FileText, CheckCircle2, Package, Car } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const steps = [
   {
@@ -38,6 +40,7 @@ export function HowItWorks() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
+          <Badge variant="outline" className="mb-4 border-primary/50 text-primary">Process</Badge>
           <h2 className="text-4xl md:text-5xl font-black mb-4">How It Works</h2>
           <div className="w-24 h-1.5 bg-primary mx-auto rounded-full shadow-[0_0_10px_hsl(var(--primary))]"></div>
         </motion.div>
@@ -57,7 +60,7 @@ export function HowItWorks() {
                 <div className="hidden lg:block absolute top-12 left-[60%] w-[80%] h-0.5 bg-gradient-to-r from-border to-transparent z-0" />
               )}
               
-              <div className="glass-panel p-8 rounded-3xl h-full flex flex-col items-center text-center relative z-10 hover:border-primary/50 transition-colors duration-300 hover:box-glow">
+              <Card className="glass-panel p-8 rounded-3xl h-full flex flex-col items-center text-center relative z-10 hover:border-primary/50 transition-colors duration-300 hover:box-glow bg-transparent">
                 <div className="relative mb-6">
                   <div className={`absolute inset-0 bg-gradient-to-br ${step.color} blur-xl opacity-40 group-hover:opacity-60 transition-opacity`} />
                   <div className={`w-20 h-20 rounded-2xl bg-card border border-white/10 flex items-center justify-center relative z-10 overflow-hidden`}>
@@ -71,11 +74,15 @@ export function HowItWorks() {
                   </div>
                 </div>
                 
-                <h3 className="text-xl font-bold mb-3 text-foreground">{step.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {step.description}
-                </p>
-              </div>
+                <CardHeader className="p-0 mb-3">
+                  <CardTitle className="text-xl font-bold text-foreground">{step.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <p className="text-muted-foreground leading-relaxed">
+                    {step.description}
+                  </p>
+                </CardContent>
+              </Card>
             </motion.div>
           ))}
         </div>

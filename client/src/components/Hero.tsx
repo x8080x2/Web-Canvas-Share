@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { Zap, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface HeroProps {
   onApplyClick: () => void;
@@ -23,12 +25,14 @@ export function Hero({ onApplyClick }: HeroProps) {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-panel mb-8 border-primary/30"
+          className="mb-8"
         >
-          <Zap className="w-5 h-5 text-primary animate-pulse" />
-          <span className="text-sm md:text-base font-medium uppercase tracking-wider text-primary-foreground">
-            Bang Energy Campaign
-          </span>
+          <Badge variant="secondary" className="px-4 py-2 rounded-full glass-panel border-primary/30 gap-2">
+            <Zap className="w-5 h-5 text-primary animate-pulse" />
+            <span className="text-sm md:text-base font-medium uppercase tracking-wider text-primary-foreground">
+              Bang Energy Campaign
+            </span>
+          </Badge>
         </motion.div>
 
         <motion.h1
@@ -52,19 +56,21 @@ export function Hero({ onApplyClick }: HeroProps) {
           Drivers, bikers and riders can earn monthly income by placing a branded sticker on their vehicle and helping promote our energy drink around the city.
         </motion.p>
 
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
           transition={{ duration: 0.4, delay: 0.6 }}
-          onClick={onApplyClick}
-          className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-bold text-white bg-primary rounded-2xl overflow-hidden transition-all shadow-[0_0_40px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_60px_hsl(var(--primary)/0.6)]"
         >
-          <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
-          <span>Apply Now</span>
-          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-        </motion.button>
+          <Button
+            size="lg"
+            onClick={onApplyClick}
+            className="group relative inline-flex items-center justify-center gap-3 px-8 py-8 text-lg font-bold text-white bg-primary rounded-2xl overflow-hidden transition-all shadow-[0_0_40px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_60px_hsl(var(--primary)/0.6)]"
+          >
+            <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+            <span>Apply Now</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </Button>
+        </motion.div>
       </div>
 
       {/* Decorative Bottom gradient fade */}

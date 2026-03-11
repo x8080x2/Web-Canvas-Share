@@ -4,7 +4,28 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCreateApplication } from "@/hooks/use-applications";
-import { Check, Loader2, AlertCircle } from "lucide-react";
+import { Check, Loader2, AlertCircle, Upload, FileCheck } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { api } from "@shared/routes";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const formSchema = z.object({
   firstName: z.string().min(2, "First name is required"),
@@ -17,28 +38,68 @@ const formSchema = z.object({
   ageConfirmed: z.literal(true, {
     errorMap: () => ({ message: "You must confirm you are 18 or older" }),
   }),
+  idFront: z.string().min(1, "ID Front is required"),
+  idBack: z.string().min(1, "ID Back is required"),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 export function ApplicationForm() {
   const [isSuccess, setIsSuccess] = useState(false);
+  const [uploading, setUploading] = useState<{ idFront: boolean; idBack: boolean }>({
+    idFront: false,
+    idBack: false,
+  });
   const { mutate: submitApplication, isPending, error } = useCreateApplication();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset
-  } = useForm<FormData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      ageConfirmed: false as any,
+      idFront: "",
+      idBack: "",
+    },
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: "idFront" | "idBack") => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 15 * 1024 * 1024) {
+        alert("File size should be less than 15MB");
+        return;
+      }
+      try {
+        setUploading((prev) => ({ ...prev, [field]: true }));
+        const body = new FormData();
+        body.append("file", file);
+        const res = await fetch(api.uploads.create.path, {
+          method: api.uploads.create.method,
+          body,
+        });
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(errorText || "Failed to upload file");
+        }
+        const responseData = await res.json();
+        const parsed = api.uploads.create.responses[201].parse(responseData);
+        form.setValue(field, parsed.url);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Failed to upload file");
+      } finally {
+        setUploading((prev) => ({ ...prev, [field]: false }));
+      }
+    }
+  };
 
   const onSubmit = (data: FormData) => {
     submitApplication(data, {
       onSuccess: () => {
         setIsSuccess(true);
-        reset();
+        form.reset();
       },
     });
   };
@@ -65,21 +126,20 @@ export function ApplicationForm() {
               <p className="text-lg text-muted-foreground mb-8">
                 Thank you for applying to the Bang Energy Drive & Earn Campaign. Our team will review your details and contact you shortly.
               </p>
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setIsSuccess(false)}
-                className="px-8 py-3 rounded-xl font-semibold bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
+                className="px-8 py-6 rounded-xl font-semibold bg-white/10 hover:bg-white/20 transition-colors border border-white/10"
               >
                 Submit Another Application
-              </button>
+              </Button>
             </motion.div>
           ) : (
-            <motion.form
+            <motion.div
               key="form"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onSubmit={handleSubmit(onSubmit)}
-              className="space-y-6"
             >
               <div className="text-center mb-10">
                 <h3 className="text-3xl font-black mb-2">Driver Application</h3>
@@ -87,110 +147,229 @@ export function ApplicationForm() {
               </div>
 
               {error && (
-                <div className="p-4 bg-red-500/10 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-400">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-sm">{error.message}</p>
-                </div>
+                <Alert variant="destructive" className="bg-red-500/10 border-red-500/50 text-red-400 mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error</AlertTitle>
+                  <AlertDescription>
+                    {error.message}
+                  </AlertDescription>
+                </Alert>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-white/80 ml-1">First Name</label>
-                  <input
-                    {...register("firstName")}
-                    className={`w-full px-5 py-4 rounded-xl bg-input border ${errors.firstName ? 'border-red-500 focus:ring-red-500/20' : 'border-white/10 focus:border-primary focus:ring-primary/20'} text-white placeholder:text-white/30 focus:outline-none focus:ring-4 transition-all`}
-                    placeholder="John"
-                  />
-                  {errors.firstName && <p className="text-red-400 text-xs ml-1">{errors.firstName.message}</p>}
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-white/80 ml-1">Last Name</label>
-                  <input
-                    {...register("lastName")}
-                    className={`w-full px-5 py-4 rounded-xl bg-input border ${errors.lastName ? 'border-red-500 focus:ring-red-500/20' : 'border-white/10 focus:border-primary focus:ring-primary/20'} text-white placeholder:text-white/30 focus:outline-none focus:ring-4 transition-all`}
-                    placeholder="Doe"
-                  />
-                  {errors.lastName && <p className="text-red-400 text-xs ml-1">{errors.lastName.message}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-white/80 ml-1">Email</label>
-                  <input
-                    {...register("email")}
-                    type="email"
-                    className={`w-full px-5 py-4 rounded-xl bg-input border ${errors.email ? 'border-red-500 focus:ring-red-500/20' : 'border-white/10 focus:border-primary focus:ring-primary/20'} text-white placeholder:text-white/30 focus:outline-none focus:ring-4 transition-all`}
-                    placeholder="john@example.com"
-                  />
-                  {errors.email && <p className="text-red-400 text-xs ml-1">{errors.email.message}</p>}
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-white/80 ml-1">Phone Number</label>
-                  <input
-                    {...register("phone")}
-                    type="tel"
-                    className={`w-full px-5 py-4 rounded-xl bg-input border ${errors.phone ? 'border-red-500 focus:ring-red-500/20' : 'border-white/10 focus:border-primary focus:ring-primary/20'} text-white placeholder:text-white/30 focus:outline-none focus:ring-4 transition-all`}
-                    placeholder="(555) 000-0000"
-                  />
-                  {errors.phone && <p className="text-red-400 text-xs ml-1">{errors.phone.message}</p>}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-sm font-semibold text-white/80 ml-1">Vehicle Type</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {["Car", "Motorcycle", "Bicycle", "Truck"].map((type) => (
-                    <label key={type} className="cursor-pointer relative">
-                      <input
-                        type="radio"
-                        value={type}
-                        {...register("vehicleType")}
-                        className="peer sr-only"
-                      />
-                      <div className="px-4 py-4 rounded-xl border border-white/10 bg-input text-center font-medium text-white/70 peer-checked:bg-primary/20 peer-checked:border-primary peer-checked:text-primary transition-all hover:bg-white/5">
-                        {type}
-                      </div>
-                    </label>
-                  ))}
-                </div>
-                {errors.vehicleType && <p className="text-red-400 text-xs ml-1">{errors.vehicleType.message}</p>}
-              </div>
-
-              <div className="pt-4 pb-2">
-                <label className="flex items-start gap-4 cursor-pointer group">
-                  <div className="relative flex items-center justify-center mt-1">
-                    <input
-                      type="checkbox"
-                      {...register("ageConfirmed")}
-                      className="peer appearance-none w-6 h-6 border-2 border-white/20 rounded-md checked:bg-primary checked:border-primary transition-all cursor-pointer"
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="John" {...field} className="bg-white/5 border-white/10" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                    <Check className="w-4 h-4 text-white absolute opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Doe" {...field} className="bg-white/5 border-white/10" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                  <span className="text-sm text-white/80 group-hover:text-white transition-colors leading-relaxed">
-                    I confirm I am 18 years or older and agree to place the advertisement sticker on my vehicle.
-                  </span>
-                </label>
-                {errors.ageConfirmed && <p className="text-red-400 text-xs ml-10 mt-1">{errors.ageConfirmed.message}</p>}
-              </div>
 
-              <button
-                type="submit"
-                disabled={isPending}
-                className="w-full py-5 rounded-xl font-black text-lg text-white bg-gradient-to-r from-primary to-accent shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_40px_hsl(var(--primary)/0.5)] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-3 hover:-translate-y-1 active:translate-y-0"
-              >
-                {isPending ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit Application"
-                )}
-              </button>
-            </motion.form>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Address</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="john@example.com" {...field} className="bg-white/5 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="idFront"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ID Front Side</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                id="idFrontInput"
+                                onChange={(e) => handleFileUpload(e, "idFront")}
+                              />
+                              <label
+                                htmlFor="idFrontInput"
+                                className={cn(
+                                  "flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed transition-all cursor-pointer bg-white/5",
+                                  field.value ? "border-green-500/50 bg-green-500/5" : "border-white/10 hover:border-primary/50"
+                                )}
+                              >
+                                {field.value ? (
+                                  <>
+                                    <FileCheck className="w-8 h-8 text-green-400 mb-2" />
+                                    <span className="text-xs text-green-400 font-medium">Front Side Uploaded</span>
+                                  </>
+                                ) : uploading.idFront ? (
+                                  <>
+                                    <Loader2 className="w-8 h-8 text-muted-foreground mb-2 animate-spin" />
+                                    <span className="text-xs text-muted-foreground font-medium text-center px-2">Uploading...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                                    <span className="text-xs text-muted-foreground font-medium text-center px-2">Click to upload ID Front</span>
+                                  </>
+                                )}
+                              </label>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="idBack"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>ID Back Side</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                id="idBackInput"
+                                onChange={(e) => handleFileUpload(e, "idBack")}
+                              />
+                              <label
+                                htmlFor="idBackInput"
+                                className={cn(
+                                  "flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed transition-all cursor-pointer bg-white/5",
+                                  field.value ? "border-green-500/50 bg-green-500/5" : "border-white/10 hover:border-primary/50"
+                                )}
+                              >
+                                {field.value ? (
+                                  <>
+                                    <FileCheck className="w-8 h-8 text-green-400 mb-2" />
+                                    <span className="text-xs text-green-400 font-medium">Back Side Uploaded</span>
+                                  </>
+                                ) : uploading.idBack ? (
+                                  <>
+                                    <Loader2 className="w-8 h-8 text-muted-foreground mb-2 animate-spin" />
+                                    <span className="text-xs text-muted-foreground font-medium text-center px-2">Uploading...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                                    <span className="text-xs text-muted-foreground font-medium text-center px-2">Click to upload ID Back</span>
+                                  </>
+                                )}
+                              </label>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(555) 000-0000" {...field} className="bg-white/5 border-white/10" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="vehicleType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vehicle Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-white/5 border-white/10">
+                              <SelectValue placeholder="Select vehicle type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-card border-white/10">
+                            <SelectItem value="Car">Car</SelectItem>
+                            <SelectItem value="Motorcycle">Motorcycle</SelectItem>
+                            <SelectItem value="Bicycle">Bicycle</SelectItem>
+                            <SelectItem value="Truck">Truck</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="ageConfirmed"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border border-white/5 p-4 bg-white/5">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                            I confirm that I am at least 18 years old
+                          </FormLabel>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    disabled={isPending || uploading.idFront || uploading.idBack}
+                    className="w-full py-6 text-lg font-bold rounded-xl bg-primary hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20"
+                  >
+                    {isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit Application"
+                    )}
+                  </Button>
+                </form>
+              </Form>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
