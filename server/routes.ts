@@ -8,12 +8,13 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
+import { getUploadsDir } from "./uploads";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  const uploadsDir = path.resolve(process.cwd(), "uploads");
+  const uploadsDir = getUploadsDir();
   fs.mkdirSync(uploadsDir, { recursive: true });
 
   const upload = multer({

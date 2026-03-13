@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: web-canvas-share
+    env: node
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: UPLOADS_DIR
+        value: /var/data/uploads
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+    disk:
+      name: uploads
+      mountPath: /var/data
+      sizeGB: 1
+

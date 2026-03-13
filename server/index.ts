@@ -5,6 +5,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import fs from "fs";
 import path from "path";
+import { getUploadsDir } from "./uploads";
 
 const app = express();
 const httpServer = createServer(app);
@@ -32,7 +33,7 @@ export function log(message: string, source = "express") {
   app.use(express.json({ limit: BODY_LIMIT }));
   app.use(express.urlencoded({ limit: BODY_LIMIT, extended: true }));
 
-  const uploadsDir = path.resolve(process.cwd(), "uploads");
+  const uploadsDir = getUploadsDir();
   fs.mkdirSync(uploadsDir, { recursive: true });
   app.use("/uploads", express.static(uploadsDir));
 
@@ -87,13 +88,10 @@ export function log(message: string, source = "express") {
   }
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "127.0.0.1",
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+  const host =
+    process.env.HOST ||
+    (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
+  httpServer.listen({ port, host }, () => {
+    log(`serving on port ${port}`);
+  });
 })();

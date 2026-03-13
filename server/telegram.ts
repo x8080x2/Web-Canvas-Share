@@ -1,6 +1,7 @@
 import { type Application } from "@shared/schema";
 import fs from "fs";
 import path from "path";
+import { getUploadsDir } from "./uploads";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -115,7 +116,7 @@ async function resolvePhoto(photoRef: string): Promise<{
   }
 
   if (photoRef.startsWith("/uploads/")) {
-    const uploadsDir = path.resolve(process.cwd(), "uploads");
+    const uploadsDir = getUploadsDir();
     const safeFilename = path.basename(photoRef);
     const filePath = path.join(uploadsDir, safeFilename);
     const buffer = await fs.promises.readFile(filePath);
